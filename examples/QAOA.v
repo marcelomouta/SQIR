@@ -10,20 +10,29 @@ Local Open Scope ucom.
    This is equivalent to applying Rx(2*β) on each qubit. *)
 Fixpoint mixingUnitary (n : nat) (β : R) : base_ucom n :=
   match n with
-    | 0    => SKIP
-    | 1    => Rx (2*β) 0
-    (* cast is required to match total circuit dimension *)
-    | S n' => Rx (2*β) n' ; cast (mixingUnitary n' β) n
+  | 0    => SKIP
+  | 1    => Rx (2*β) 0
+  (* cast is required to match total circuit dimension *)
+  | S n' => Rx (2*β) n' ; cast (mixingUnitary n' β) n
   end.
 
 
 Definition graph := list (nat * nat). (* Is an adjacency list enough? *)
-(* Other graph implementations in Coq:
-   - https://github.com/coq-contribs/graph-basics
-   - https://gist.github.com/andrejbauer/8dade8489dff8819c352e88f446154a1
-   - https://stackoverflow.com/questions/24753975/simple-graph-theory-proofs-using-coq
-   - https://softwarefoundations.cis.upenn.edu/vfa-current/Color.html#lab294 *)
+(* Alternative graph implementation in Coq:
+   - https://github.com/coq-contribs/graph-basics *)
 
+(* The unitary operator U(γ) for the cost Hamiltonian Hc 
+   g : problem graph
+   n : number of qubits
+   γ : rotation angle parameter
 
-
-
+   The operator is defined as:
+    U(γ) = e^(−i.γ.Hc) = prodsum{edges} e^(−i.γ.C_jk)
+   where C_jk = 1/2 (−σz_j.σz_k + 1)
+*)
+Fixpoint costUnitary (g : graph) (n : nat) (γ : R) : base_ucom n := (* should we tie n to number of vertices in g? *)
+  match g with
+  | [] => SKIP
+  | (j,k) :: g' => CNOT j k ; Rz (2*γ) k ; CNOT j k ;
+                  costUnitary g' n γ
+  end.
