@@ -1,7 +1,7 @@
 # Using the example from https://coq.inria.fr/refman/practical-tools/utilities.html#reusing-extending-the-generated-makefile
 
 # KNOWNTARGETS will not be passed along to CoqMakefile
-KNOWNTARGETS := CoqMakefile all examples voqc shor ghz clean
+KNOWNTARGETS := CoqMakefile all examples voqc shor ghz qaoa clean
 
 # KNOWNFILES will not get implicit targets from the final rule, and so
 # depending on them won't invoke the submake
@@ -25,9 +25,9 @@ invoke-coqmakefile: CoqMakefile
 ##		      Your targets here			 ##
 ###########################################################
 
-COQ_OPTS := -R SQIR Top.SQIR -R externals/euler Top.externals.euler -R examples Top.examples -R VOQC Top.VOQC
+COQ_OPTS := -R SQIR Top.SQIR -R externals/euler Top.externals.euler -R externals/graph-basics-master Top.externals.GraphBasics -R examples Top.examples -R VOQC Top.VOQC
 
-all: examples voqc shor VOQC/PropagateClassical.vo VOQC/RemoveZRotationBeforeMeasure.vo VOQC/BooleanCompilation.vo
+all: examples voqc shor qaoa VOQC/PropagateClassical.vo VOQC/RemoveZRotationBeforeMeasure.vo VOQC/BooleanCompilation.vo
 
 examples: invoke-coqmakefile examples/Deutsch.vo examples/DeutschJozsa.vo examples/Grover.vo examples/QPE.vo examples/Simon.vo examples/Superdense.vo examples/Teleport.vo examples/Wiesner.vo ghz
 
@@ -36,6 +36,8 @@ ghz: invoke-coqmakefile examples/ghz/GHZ.vo examples/ghz/ExtrGHZ.vo
 shor: invoke-coqmakefile examples/shor/Main.vo
 
 voqc: invoke-coqmakefile VOQC/Main.vo
+
+qaoa: invoke-coqmakefile examples/QAOA.vo
 
 # Built by 'make examples'
 
@@ -165,6 +167,11 @@ VOQC/MappingGateSet.vo: VOQC/MappingGateSet.v VOQC/UnitaryListRepresentation.vo
 
 VOQC/MappingValidation.vo: VOQC/MappingValidation.v VOQC/SwapRoute.vo
 	coqc $(COQ_OPTS) VOQC/MappingValidation.v
+
+# Built by 'make qaoa'
+
+examples/QAOA.vo:
+	coqc $(COQ_OPTS) examples/QAOA.v
 
 # Misc. files built by 'make all'
 
