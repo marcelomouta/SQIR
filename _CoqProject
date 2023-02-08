@@ -1,5 +1,6 @@
 -R SQIR Top.SQIR
 -R externals/euler Top.externals.euler
+-R externals/graph-basics-master Top.externals.GraphBasics
 -R examples Top.examples
 -R VOQC Top.VOQC
 #-arg -profile-ltac
@@ -14,6 +15,19 @@ externals/euler/Harmonic.v
 externals/euler/Log.v
 externals/euler/Asympt.v
 externals/euler/AltPrimes.v
+
+# externals/graph-basics-master/Acyclic.v
+externals/graph-basics-master/Arcs.v
+# externals/graph-basics-master/Connected.v
+externals/graph-basics-master/Degrees.v
+externals/graph-basics-master/Digraphs.v
+externals/graph-basics-master/Dipaths.v
+externals/graph-basics-master/Edges.v
+externals/graph-basics-master/Enumerated.v
+externals/graph-basics-master/Graphs.v
+# externals/graph-basics-master/Paths.v
+externals/graph-basics-master/Sets.v
+externals/graph-basics-master/Vertices.v
 
 SQIR/SQIR.v
 SQIR/UnitarySem.v
