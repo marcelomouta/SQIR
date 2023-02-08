@@ -70,16 +70,16 @@ Definition QAOA_circuit {v a} (g : Graph v a) (p : nat) (betas gammas : list R) 
 (* Do we need to calculate cut size? 
    Qiskit implementation does it for the expected value used in optimization
    Qimaera uses it to deliver best cut of all runs 
-Fixpoint cut_size {n : nat} (g: graph n) (c : cut) : nat :=
-  match g with
+Fixpoint cut_size (edges: E_list) (c : cut) : nat :=
+  match edges with
   | [] => 0
-  | (j,k) :: g' => if negb (eqb (c j) (c k)) 
-                    then S (@cut_size n g' c)
-                    else (@cut_size n g' c)
+  | E_ends (index j) (index k) :: edges' => if negb (eqb (c j) (c k)) 
+                    then S (@cut_size edges' c)
+                    else (@cut_size edges' c)
   end. *)
 
 (* For simplicity, we do not provide an optimizer in this implementation *)
-Definition classical_optimization {v e} (g : Graph v e) (betas gammas : list R)
+Definition classical_optimization {v a} (g : Graph v a) (betas gammas : list R)
                                                                           : list R * list R :=
 (* Is it better to assume there is an external optimizer instead of providing dummy function? *)
   (betas,gammas).
@@ -88,12 +88,12 @@ Definition classical_optimization {v e} (g : Graph v e) (betas gammas : list R)
 Definition run {n : nat} (c : base_ucom n) (rnd : R) : nat :=
   sample (apply_u (uc_eval c)) rnd.
 
-Definition QAOA_body {v e} (g : Graph v e) (p : nat) (betas gammas : list R) (rnd : R) : option cut :=
+Definition QAOA_body {v a} (g : Graph v a) (p : nat) (betas gammas : list R) (rnd : R) : option cut :=
   let (betas', gammas') := classical_optimization g betas gammas in
   let result := run (QAOA_circuit g p betas' gammas') rnd in
   (* Convert sampled state to boolean function *)
   Some (nat_to_funbool (G_order g) result).
 
 
-Definition QAOA {v e} (g : Graph v e) (p: nat) (betas gammas : list R) (rnds : list R) : option cut :=
+Definition QAOA {v a} (g : Graph v a) (p: nat) (betas gammas : list R) (rnds : list R) : option cut :=
   iterate rnds (QAOA_body g p betas gammas).
