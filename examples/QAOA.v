@@ -1,3 +1,4 @@
+Require Import Vector.
 Require Import UnitaryOps.
 Require Import GraphBasics.Graphs.
 Require Import QuantumLib.DiscreteProb.
@@ -39,32 +40,16 @@ Fixpoint cost_unitary {n : nat} (edges : E_list) (γ : R) : base_ucom n :=
    n : number of qubits *)
 Definition initial_state n : base_ucom n := npar n U_H.
 
-(* Use vectors to bind number of parameters to p?
-    https://coq.inria.fr/library/Coq.Vectors.VectorDef.html 
-Require Import Vector.
 Import VectorNotations.
-Fixpoint QAOA_layers {p : nat} {v a} (g : Graph v a) (betas gammas : t R p) : base_ucom (G_order g) :=
-  match p with
-  | 0    => SKIP
-  | S p' => let (be, betas') := uncons (betas : t R (S p')) in 
-            let (ga, gammas') := uncons gammas in
-              cost_unitary (GE_list g) ga ; mixing_unitary be ; QAOA_layers g tl betas  gammas'
-  end.
+(* See convoy pattern: http://adam.chlipala.net/cpdt/html/MoreDep.html *)
+Fixpoint QAOA_layers {p : nat} {v a} (g : Graph v a) (betas gammas: Vector.t R p) : base_ucom (G_order g) :=
+  match betas in Vector.t _ n return Vector.t _ n -> base_ucom (G_order g) with
+  | β :: betas' => fun gs => cost_unitary (GE_list g) (Vector.hd gs) ; mixing_unitary β ; QAOA_layers g betas' (Vector.tl gs)
+  | _ => fun gs => SKIP
+  end gammas.
 
-Fixpoint QAOA_layers {p : nat} {v a} (g : Graph v a) (betas gammas : t R p) : base_ucom (G_order g) :=
-  match betas, gammas with
-  | β :: betas', γ :: gammas' => cost_unitary (GE_list g) γ ; mixing_unitary β ; QAOA_layers g betas' gammas'
-  | _, _ => SKIP
-  end. *)
-Fixpoint QAOA_layers {v a} (g : Graph v a) (p : nat) (betas gammas : list R) : base_ucom (G_order g) :=
-  match (betas, gammas, p) with
-  | (β :: betas', γ :: gammas', S p') => cost_unitary (GE_list g) γ ; mixing_unitary β ;
-                                         QAOA_layers g p' betas' gammas'
-  | _ => SKIP
-  end.
-
-Definition QAOA_circuit {v a} (g : Graph v a) (p : nat) (betas gammas : list R) : base_ucom (G_order g) :=
-  initial_state (G_order g); QAOA_layers g p betas gammas.
+Definition QAOA_circuit {v a} (g : Graph v a) (p : nat) (betas gammas : Vector.t R p) : base_ucom (G_order g) :=
+  initial_state (G_order g); QAOA_layers g betas gammas.
 
 
 (* Do we need to calculate cut size? 
@@ -79,8 +64,8 @@ Fixpoint cut_size (edges: E_list) (c : cut) : nat :=
   end. *)
 
 (* For simplicity, we do not provide an optimizer in this implementation *)
-Definition classical_optimization {v a} (g : Graph v a) (betas gammas : list R)
-                                                                          : list R * list R :=
+Definition classical_optimization {v a p} (g : Graph v a) (betas gammas : Vector.t R p)
+                                                                          : Vector.t R p * Vector.t R p :=
 (* Is it better to assume there is an external optimizer instead of providing dummy function? *)
   (betas,gammas).
 
@@ -88,12 +73,12 @@ Definition classical_optimization {v a} (g : Graph v a) (betas gammas : list R)
 Definition run {n : nat} (c : base_ucom n) (rnd : R) : nat :=
   sample (apply_u (uc_eval c)) rnd.
 
-Definition QAOA_body {v a} (g : Graph v a) (p : nat) (betas gammas : list R) (rnd : R) : option cut :=
+Definition QAOA_body {v a} (g : Graph v a) (p : nat) (betas gammas : Vector.t R p) (rnd : R) : option cut :=
   let (betas', gammas') := classical_optimization g betas gammas in
   let result := run (QAOA_circuit g p betas' gammas') rnd in
   (* Convert sampled state to boolean function *)
   Some (nat_to_funbool (G_order g) result).
 
 
-Definition QAOA {v a} (g : Graph v a) (p: nat) (betas gammas : list R) (rnds : list R) : option cut :=
+Definition QAOA {v a} (g : Graph v a) (p: nat) (betas gammas : Vector.t R p) (rnds : list R) : option cut :=
   iterate rnds (QAOA_body g p betas gammas).
