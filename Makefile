@@ -170,7 +170,7 @@ VOQC/MappingValidation.vo: VOQC/MappingValidation.v VOQC/SwapRoute.vo
 
 # Built by 'make qaoa'
 
-examples/QAOA.vo:
+examples/QAOA.vo: examples/QAOA.v
 	coqc $(COQ_OPTS) examples/QAOA.v
 
 # Misc. files built by 'make all'
