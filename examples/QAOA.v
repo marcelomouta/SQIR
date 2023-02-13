@@ -4,9 +4,6 @@ Require Import GraphBasics.Graphs.
 Require Import QuantumLib.DiscreteProb.
 Local Open Scope ucom.
 
-(* A Cut is a boolean funtion that maps a vertex index to the corresponding set *)
-Definition cut := nat -> bool.
-
 (* The unitary operator U(β) for the mixer Hamiltonian Hm
    n : number of qubits
    β : rotation angle parameter
@@ -47,21 +44,13 @@ Fixpoint QAOA_layers {p : nat} {v a} (g : Graph v a) (betas gammas: Vector.t R p
   | β :: betas' => fun gs => cost_unitary (GE_list g) (Vector.hd gs) ; mixing_unitary β ; QAOA_layers g betas' (Vector.tl gs)
   | _ => fun gs => SKIP
   end gammas.
+Local Close Scope vector.
 
 Definition QAOA_circuit {v a} (g : Graph v a) (p : nat) (betas gammas : Vector.t R p) : base_ucom (G_order g) :=
   initial_state (G_order g); QAOA_layers g betas gammas.
 
-
-(* Do we need to calculate cut size? 
-   Qiskit implementation does it for the expected value used in optimization
-   Qimaera uses it to deliver best cut of all runs 
-Fixpoint cut_size (edges: E_list) (c : cut) : nat :=
-  match edges with
-  | [] => 0
-  | E_ends (index j) (index k) :: edges' => if negb (eqb (c j) (c k)) 
-                    then S (@cut_size edges' c)
-                    else (@cut_size edges' c)
-  end. *)
+(* A Cut is a boolean funtion that maps a vertex index to the corresponding set *)
+Definition cut := nat -> bool.
 
 (* For simplicity, we do not provide an optimizer in this implementation *)
 Definition classical_optimization {v a p} (g : Graph v a) (betas gammas : Vector.t R p)
@@ -73,12 +62,15 @@ Definition classical_optimization {v a p} (g : Graph v a) (betas gammas : Vector
 Definition run {n : nat} (c : base_ucom n) (rnd : R) : nat :=
   sample (apply_u (uc_eval c)) rnd.
 
-Definition QAOA_body {v a} (g : Graph v a) (p : nat) (betas gammas : Vector.t R p) (rnd : R) : option cut :=
+Definition QAOA_body {v a} (g : Graph v a) (p : nat) (betas gammas : Vector.t R p) (rnd : R) : cut :=
   let (betas', gammas') := classical_optimization g betas gammas in
   let result := run (QAOA_circuit g p betas' gammas') rnd in
   (* Convert sampled state to boolean function *)
-  Some (nat_to_funbool (G_order g) result).
+  nat_to_funbool (G_order g) result.
 
-
-Definition QAOA {v a} (g : Graph v a) (p: nat) (betas gammas : Vector.t R p) (rnds : list R) : option cut :=
-  iterate rnds (QAOA_body g p betas gammas).
+Fixpoint QAOA {v a} (g : Graph v a) (p: nat) (betas gammas : Vector.t R p) (rnds : list R) : list cut :=
+  match rnds with
+  | [] => []
+  | (rnd :: rnds') => let last_cut := QAOA_body g p betas gammas rnd in
+                      last_cut :: QAOA g p betas gammas rnds'
+  end.
